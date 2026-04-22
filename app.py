@@ -41,7 +41,7 @@ st.markdown("<div class='title'>📊 Interview Pipeline Dashboard</div>", unsafe
 st.write("---")
 
 # ---------------- LOAD DATA ----------------
-sheet_id = "YOUR_SHEET_ID"
+sheet_id = "1vYu-xYB5T-_Sl-YL-_9pBcSnCQ_j3bDB5kPuq4Ey6Bc"
 url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
 df = pd.read_csv(url)
