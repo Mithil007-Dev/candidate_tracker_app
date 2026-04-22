@@ -67,7 +67,10 @@ l2_select_df = filtered_df[filtered_df["Stage"].str.contains("L2 SELECT")]
 l3_select_df = filtered_df[filtered_df["Stage"].str.contains("L3 SELECT")]
 
 # Final + Reject
-final_df = filtered_df[filtered_df["Status"].str.contains("SELECT")]
+final_df = filtered_df[
+    filtered_df["Stage"].str.contains("FINAL", na=False) |
+    filtered_df["Status"].str.contains("SELECT|OFFER|JOIN", na=False)
+]
 reject_df = filtered_df[filtered_df["Status"].str.contains("REJECT")]
 
 # Counts
