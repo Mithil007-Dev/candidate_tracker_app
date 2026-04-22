@@ -30,11 +30,6 @@ st.markdown("""
 .l3 {background: linear-gradient(135deg, #a18cd1, #fbc2eb);}
 .final {background: linear-gradient(135deg, #00b09b, #96c93d);}
 .reject {background: linear-gradient(135deg, #ff416c, #ff4b2b);}
-.section {
-    font-size: 24px;
-    font-weight: 600;
-    margin-top: 20px;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -47,6 +42,8 @@ sheet_id = "1vYu-xYB5T-_Sl-YL-_9pBcSnCQ_j3bDB5kPuq4Ey6Bc"
 url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
 df = pd.read_csv(url)
+
+# Clean text
 df["Stage"] = df["Stage"].astype(str).str.upper()
 df["Status"] = df["Status"].astype(str).str.upper()
 
@@ -54,26 +51,58 @@ df["Status"] = df["Status"].astype(str).str.upper()
 client = st.selectbox("Filter by Client", ["All"] + list(df["Client"].dropna().unique()))
 filtered_df = df if client == "All" else df[df["Client"] == client]
 
-# ---------------- LOGIC ----------------
+# ---------------- SMART PIPELINE LOGIC ----------------
 
-# Ongoing
-l1_round_df = filtered_df[(filtered_df["Stage"].str.contains("L1")) & (~filtered_df["Stage"].str.contains("SELECT"))]
-l2_round_df = filtered_df[(filtered_df["Stage"].str.contains("L2")) & (~filtered_df["Stage"].str.contains("SELECT"))]
-l3_round_df = filtered_df[(filtered_df["Stage"].str.contains("L3")) & (~filtered_df["Stage"].str.contains("SELECT"))]
-
-# Cleared
-l1_select_df = filtered_df[filtered_df["Stage"].str.contains("L1 SELECT")]
-l2_select_df = filtered_df[filtered_df["Stage"].str.contains("L2 SELECT")]
-l3_select_df = filtered_df[filtered_df["Stage"].str.contains("L3 SELECT")]
-
-# Final + Reject
-final_df = filtered_df[
-    filtered_df["Stage"].str.contains("FINAL", na=False) |
-    filtered_df["Status"].str.contains("SELECT|OFFER|JOIN", na=False)
+# L1 ROUND
+l1_round_df = filtered_df[
+    (filtered_df["Stage"].str.contains("L1")) &
+    (~filtered_df["Stage"].str.contains("SELECT"))
 ]
-reject_df = filtered_df[filtered_df["Status"].str.contains("REJECT")]
 
-# Counts
+# L2 ROUND (includes L1 -> L2 movement)
+l2_round_df = filtered_df[
+    ((filtered_df["Stage"].str.contains("L2")) &
+     (~filtered_df["Stage"].str.contains("SELECT"))) |
+    (filtered_df["Status"].str.contains("L2 SCHEDULED"))
+]
+
+# L3 ROUND (includes L2 -> L3 movement)
+l3_round_df = filtered_df[
+    ((filtered_df["Stage"].str.contains("L3")) &
+     (~filtered_df["Stage"].str.contains("SELECT"))) |
+    (filtered_df["Status"].str.contains("L3 SCHEDULED"))
+]
+
+# L1 SELECT (exclude those moved to L2)
+l1_select_df = filtered_df[
+    (filtered_df["Stage"].str.contains("L1 SELECT")) &
+    (~filtered_df["Status"].str.contains("L2 SCHEDULED"))
+]
+
+# L2 SELECT (exclude those moved to L3)
+l2_select_df = filtered_df[
+    (filtered_df["Stage"].str.contains("L2 SELECT")) &
+    (~filtered_df["Status"].str.contains("L3 SCHEDULED"))
+]
+
+# L3 SELECT (exclude those moved to final)
+l3_select_df = filtered_df[
+    (filtered_df["Stage"].str.contains("L3 SELECT")) &
+    (~filtered_df["Status"].str.contains("FINAL|OFFER|JOIN"))
+]
+
+# FINAL
+final_df = filtered_df[
+    filtered_df["Stage"].str.contains("FINAL") |
+    filtered_df["Status"].str.contains("SELECT|OFFER|JOIN")
+]
+
+# REJECT
+reject_df = filtered_df[
+    filtered_df["Status"].str.contains("REJECT")
+]
+
+# ---------------- COUNTS ----------------
 l1_round = len(l1_round_df)
 l2_round = len(l2_round_df)
 l3_round = len(l3_round_df)
@@ -85,27 +114,27 @@ l3_select = len(l3_select_df)
 final_count = len(final_df)
 reject_count = len(reject_df)
 
-# ---------------- CARDS ----------------
+# ---------------- DASHBOARD ----------------
 
 st.markdown("## 🔄 Ongoing Interviews")
 
-col1, col2, col3 = st.columns(3)
-col1.markdown(f"<div class='card l1'>🟡 L1 Round<br><h1>{l1_round}</h1></div>", unsafe_allow_html=True)
-col2.markdown(f"<div class='card l2'>🔵 L2 Round<br><h1>{l2_round}</h1></div>", unsafe_allow_html=True)
-col3.markdown(f"<div class='card l3'>🟣 L3 Round<br><h1>{l3_round}</h1></div>", unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
+c1.markdown(f"<div class='card l1'>🟡 L1 Round<br><h1>{l1_round}</h1></div>", unsafe_allow_html=True)
+c2.markdown(f"<div class='card l2'>🔵 L2 Round<br><h1>{l2_round}</h1></div>", unsafe_allow_html=True)
+c3.markdown(f"<div class='card l3'>🟣 L3 Round<br><h1>{l3_round}</h1></div>", unsafe_allow_html=True)
 
 st.markdown("## ✅ Cleared Candidates")
 
-col4, col5, col6 = st.columns(3)
-col4.markdown(f"<div class='card l1'>🟡 L1 Select<br><h1>{l1_select}</h1></div>", unsafe_allow_html=True)
-col5.markdown(f"<div class='card l2'>🔵 L2 Select<br><h1>{l2_select}</h1></div>", unsafe_allow_html=True)
-col6.markdown(f"<div class='card l3'>🟣 L3 Select<br><h1>{l3_select}</h1></div>", unsafe_allow_html=True)
+c4, c5, c6 = st.columns(3)
+c4.markdown(f"<div class='card l1'>🟡 L1 Select<br><h1>{l1_select}</h1></div>", unsafe_allow_html=True)
+c5.markdown(f"<div class='card l2'>🔵 L2 Select<br><h1>{l2_select}</h1></div>", unsafe_allow_html=True)
+c6.markdown(f"<div class='card l3'>🟣 L3 Select<br><h1>{l3_select}</h1></div>", unsafe_allow_html=True)
 
 st.markdown("## 🎯 Final Outcome")
 
-col7, col8 = st.columns(2)
-col7.markdown(f"<div class='card final'>🟢 Final Select<br><h1>{final_count}</h1></div>", unsafe_allow_html=True)
-col8.markdown(f"<div class='card reject'>❌ Reject<br><h1>{reject_count}</h1></div>", unsafe_allow_html=True)
+c7, c8 = st.columns(2)
+c7.markdown(f"<div class='card final'>🟢 Final Selected<br><h1>{final_count}</h1></div>", unsafe_allow_html=True)
+c8.markdown(f"<div class='card reject'>❌ Rejected<br><h1>{reject_count}</h1></div>", unsafe_allow_html=True)
 
 st.write("---")
 
@@ -135,8 +164,8 @@ st.dataframe(l3_select_df, use_container_width=True, hide_index=True)
 
 st.markdown("## 🎯 Final Outcome Details")
 
-st.markdown("### 🟢 Final Select")
+st.markdown("### 🟢 Final Selected")
 st.dataframe(final_df, use_container_width=True, hide_index=True)
 
-st.markdown("### ❌ Reject")
+st.markdown("### ❌ Rejected")
 st.dataframe(reject_df, use_container_width=True, hide_index=True)
