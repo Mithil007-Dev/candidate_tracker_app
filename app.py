@@ -101,8 +101,8 @@ col6.markdown(f"<div class='card l3'>🟣 L3 Select<br><h1>{l3_select}</h1></div
 st.markdown("## 🎯 Final Outcome")
 
 col7, col8 = st.columns(2)
-col7.markdown(f"<div class='card final'>🟢 Final Selected<br><h1>{final_count}</h1></div>", unsafe_allow_html=True)
-col8.markdown(f"<div class='card reject'>❌ Rejected<br><h1>{reject_count}</h1></div>", unsafe_allow_html=True)
+col7.markdown(f"<div class='card final'>🟢 Final Select<br><h1>{final_count}</h1></div>", unsafe_allow_html=True)
+col8.markdown(f"<div class='card reject'>❌ Reject<br><h1>{reject_count}</h1></div>", unsafe_allow_html=True)
 
 st.write("---")
 
